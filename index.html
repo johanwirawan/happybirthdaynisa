@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Birthday GameBoy - Nisa 🥰</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* --- STYLE DASAR --- */
+        :root {
+            --body-color: #dcdcd6; 
+            --screen-bg: #0a101a; 
+            --retro-blue: #00ffff; 
+            --btn-red: #e74c3c;
+            --btn-green: #2ecc71;
+            --btn-blue: #3498db;
+            --retro-yellow: #f1c40f;
+            --maze-pink: #ff85b3;
+            --heart-red: #ff2d55;
+        }
+
+        body {
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
+            background: linear-gradient(135deg, #050811 0%, #000000 100%);
+            margin: 0; font-family: 'Press Start 2P', cursive;
+            overflow: hidden; user-select: none; position: relative;
+        }
+
+        /* --- Bintang Jatuh (Background Luar) --- */
+        .bg-star {
+            position: absolute; background: #fff; width: 4px; height: 4px;
+            box-shadow: 0 0 8px #00ffff; border-radius: 1px;
+            animation: fall linear infinite; z-index: 1; opacity: 0;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-50px); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(110vh); opacity: 0; }
+        }
+
+        /* --- RETRO LOADING SCREEN --- */
+        #loading-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #0d1b2a;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 9999; color: var(--retro-blue); font-family: 'Press Start 2P', cursive;
+            text-align: center; padding: 20px; box-sizing: border-box;
+            transition: opacity 0.5s ease;
+        }
+        .load-percentage {
+            font-size: 22px; color: var(--retro-yellow); margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(241, 196, 15, 0.6);
+        }
+        .load-text {
+            font-size: 8px; line-height: 1.8; color: var(--retro-blue);
+            max-width: 240px; min-height: 35px; text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+        }
+        .load-bar-container {
+            width: 80%; height: 10px; background: #050c14; border: 2px solid var(--retro-blue);
+            margin-top: 20px; border-radius: 3px; overflow: hidden; padding: 1px;
+            box-shadow: inset 0 0 5px #000;
+        }
+        .load-bar-fill {
+            height: 100%; background: var(--retro-blue); width: 0%;
+            box-shadow: 0 0 8px var(--retro-blue); transition: width 0.1s linear;
+        }
+
+        /* --- Galaxy Background (Dalam Layar) --- */
+        .space-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
+            overflow: hidden; z-index: 1; display: none;
+            background: radial-gradient(circle at center, #101c2b 0%, #05080d 100%);
+        }
+        .overlay-active .space-bg { display: block; }
+        .star { position: absolute; background: white; border-radius: 50%; animation: twinkle var(--duration) infinite; }
+        @keyframes twinkle { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
+        .moon { position: absolute; top: 20px; right: 20px; width: 35px; height: 35px; background: #f1c40f; border-radius: 50%; box-shadow: 0 0 15px rgba(241, 196, 15, 0.4); }
+        .earth { position: absolute; top: 60px; right: 15px; font-size: 20px; animation: float 7s ease-in-out infinite; }
+        .saturn { position: absolute; bottom: 25%; right: 10%; width: 25px; height: 25px; background: #e67e22; border-radius: 50%; }
+        .saturn::after { content: ''; position: absolute; top: 50%; left: 50%; width: 40px; height: 8px; border: 2px solid rgba(243, 156, 18, 0.5); border-radius: 50%; transform: translate(-50%, -50%) rotate(-20deg); }
+        .ufo { position: absolute; font-size: 15px; top: 30%; left: -50px; animation: fly-ufo 12s linear infinite; }
+        .astronaut { position: absolute; font-size: 18px; bottom: 25%; left: 8%; animation: float 5s ease-in-out infinite; }
+        .plane { position: absolute; font-size: 15px; top: 10%; left: 10%; animation: float 10s infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        @keyframes fly-ufo { from { left: -50px; } to { left: 120%; } }
+        /* --- CONSOLE FRAME --- */
+        .console {
+            width: 320px; background: var(--body-color);
+            background-image: linear-gradient(135deg, #eeeeee 0%, #cccccc 100%);
+            border-radius: 20px 20px 60px 20px;
+            box-shadow: 20px 20px 50px rgba(0,0,0,0.8), inset -5px -5px 10px rgba(0,0,0,0.2), inset 5px 5px 10px rgba(255,255,255,0.5);
+            display: flex; flex-direction: column; align-items: center; padding: 15px 15px 30px 15px;
+            position: relative; border: 1px solid #aaa; transition: transform 0.3s; z-index: 10;
+        }
+        @media (max-height: 700px) { .console { transform: scale(0.85); } }
+
+        .screen-border {
+            width: 290px; height: 220px; background-color: #1a1a24; border-radius: 10px;
+            display: flex; justify-content: center; align-items: center; overflow: hidden;
+            margin-bottom: 20px; border: 4px solid #111; box-shadow: inset 0 0 15px #000;
+            transition: all 0.4s ease; z-index: 10; position: relative; 
+        }
+        .screen-border::before {
+            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 255, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 20; background-size: 100% 3px, 3px 100%; pointer-events: none;
+        }
+        .overlay-active .screen-border {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            border: none; border-radius: 0; margin: 0; z-index: 999;
+        }
+        #display {
+            width: 100%; height: 100%; background-color: var(--screen-bg);
+            background-image: linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 15px 15px; position: relative; display: flex; flex-direction: column; 
+            padding: 15px; box-sizing: border-box; overflow-y: auto; scrollbar-width: none; transform: scale(1.02); 
+        }
+        /* --- GALERI UI (VERTIKAL KE BAWAH, AMAN DI CHROME) --- */
+        .gallery-ui { 
+            width: 100%; height: 100%; display: flex; flex-direction: column; 
+            background-color: transparent; position: relative; overflow: hidden; 
+        }
+        
+        .printer-header {
+            width: 100%; background: var(--screen-bg); 
+            z-index: 30; padding: 10px 0 8px 0; display: flex; flex-direction: column; align-items: center;
+            border-bottom: 2px solid #222; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            flex-shrink: 0;
+        }
+        .gallery-big-text { font-family: 'Press Start 2P'; font-size: 11px; color: var(--retro-blue); text-shadow: 0 0 5px rgba(0, 255, 255, 0.5); letter-spacing: 2px; margin-bottom: 6px; text-transform: uppercase; }
+        .printer-slot { width: 80%; height: 8px; background: #111; border-top: 2px solid #444; border-bottom: 2px solid #555; border-radius: 3px; box-shadow: inset 0 0 8px #000; position: relative; }
+        .printer-slot::after { content: ''; position: absolute; bottom:-2px; left:0; width:100%; height:2px; background: rgba(0,0,0,0.8); filter:blur(2px); }
+
+        .photo-stream {
+            flex: 1; width: 100%; overflow-y: auto; overflow-x: hidden;
+            display: flex; flex-direction: column; align-items: center;
+            padding: 15px 0 20px 0; gap: 20px; scrollbar-width: none; scroll-behavior: smooth;
+        }
+        .photo-stream::-webkit-scrollbar { display: none; }
+
+        .photo-card-frame {
+            background-color: #fff; padding: 6px 6px 28px 6px;
+            width: 140px; flex-shrink: 0;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.7); border-radius: 2px; position: relative; 
+            transform: none !important;
+            animation: slideDown 0.4s ease-out;
+            -webkit-backface-visibility: hidden; backface-visibility: hidden;
+        }
+        @keyframes slideDown { from { transform: translateY(-25px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .photo-img-area { width: 100%; aspect-ratio: 3/4; background: #000; position: relative; overflow: hidden; border: 1px solid #ddd; display: flex; justify-content: center; align-items: center; }
+        .photo-img-area img { 
+            width: 100%; height: 100%; object-fit: cover; 
+            filter: contrast(1.1) brightness(1.05); opacity: 0; transition: opacity 0.4s ease-in;
+            -webkit-backface-visibility: hidden; backface-visibility: hidden; transform: translateZ(0);
+        }
+        .photo-tag-number { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); background-color: rgba(0, 0, 0, 0.7); color: var(--retro-yellow); padding: 2px 4px; border-radius: 3px; font-size: 8px; z-index: 2; }
+        .card-dot { width: 4px; height: 4px; background: #ddd; border-radius: 50%; position: absolute; bottom: 12px; box-shadow: inset 1px 1px 2px rgba(0,0,0,0.2); }
+        .d-left { left: 8px; } .d-right { right: 8px; }
+
+        .wavy-text { color: var(--retro-blue); font-size: 8px; font-weight: bold; display: flex; justify-content: center; width: 100%; margin-top: 4px; }
+        .wavy-text span { display: inline-block; animation: wave 1s infinite ease-in-out; animation-delay: calc(0.1s * var(--i)); }
+        @keyframes wave { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+
+        .video-card-trigger { width: 140px; aspect-ratio: 1/1; background-color: #0d1117; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 3px; cursor: pointer; box-shadow: 0 6px 15px rgba(0,0,0,0.7); position: relative; border: 2px solid #333; flex-shrink: 0; overflow: hidden; margin: 10px auto; animation: slideDown 0.4s ease; }
+        .video-card-trigger::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('https://raw.githubusercontent.com/johanwirawan/Nissa-/refs/heads/main/IMG_20260924_074357.jpg'); background-size: cover; background-position: center; filter: brightness(0.5) contrast(1.1); z-index: 1; }
+        .play-circle { width: 40px; height: 40px; background-color: #b92b27; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 3px 0 #8b1f1c; margin-bottom: 6px; position: relative; z-index: 2; }
+        .play-triangle { width: 0; height: 0; border-left: 12px solid #fff; border-top: 7px solid transparent; border-bottom: 7px solid transparent; margin-left: 3px; }
+        .video-text { color: #fff; font-size: 7px; font-family: sans-serif; margin-bottom: 15px; text-align: center; position: relative; z-index: 2; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+        .clip-dump-label-trigger { position: absolute; bottom: 0; width: 100%; background: #000; color: var(--retro-yellow); padding: 5px 0; text-align: center; font-size: 8px; border-top: 1px solid #333; z-index: 3; }
+        .btn-reload { background-color: var(--btn-green); color: white; border: 2px solid #fff; padding: 10px; font-family: 'Press Start 2P'; font-size: 7px; cursor: pointer; border-radius: 4px; width: 140px; text-align: center; box-shadow: 0 3px 0 #196f3d; margin: 5px auto; animation: slideDown 0.4s ease; }
+        
+        .gallery-bottom-bar {
+            width: 100%; background: var(--screen-bg); padding: 8px 10px; display: flex; justify-content: center; align-items: center; border-top: 2px solid #222; box-sizing: border-box; z-index: 30; flex-shrink: 0;
+        }
+        .btn-gal-control {
+            background-color: var(--btn-red); color: white; border: 2px solid #fff; padding: 8px 16px; font-family: 'Press Start 2P'; font-size: 7px; cursor: pointer; border-radius: 4px; box-shadow: 0 3px 0 #922b21; text-align: center; width: 140px;
+        }
+        .btn-gal-control.print-btn { background-color: var(--heart-red); box-shadow: 0 3px 0 #900C3F; }
+        /* --- VIDEO MODAL POPUP --- */
+        .video-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; animation: fadeIn 0.3s ease-out; }
+        .video-window-frame { width: 90%; max-width: 330px; background: #222; border: 3px solid var(--retro-yellow); border-radius: 8px; box-shadow: 0 0 30px rgba(241, 196, 15, 0.3); position: relative; display: flex; flex-direction: column; overflow: visible; }
+        .video-header-bar { background: #333; color: var(--retro-yellow); font-size: 9px; text-align: center; padding: 8px; border-bottom: 2px solid #444; border-radius: 5px 5px 0 0; }
+        .video-player-container { width: 100%; position: relative; background: #000; display: flex; justify-content: center; align-items: center; min-height: 180px; }
+        video { width: 100%; height: auto; display: block; max-height: 55vh; }
+        .btn-close-modal { position: absolute; top: -18px; right: -12px; width: 32px; height: 32px; background: #ff2d55; color: white; border: 2px solid white; border-radius: 50%; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: 0 3px 6px rgba(0,0,0,0.5); z-index: 10000; }
+        .nav-video-container { display: flex; justify-content: space-between; width: 100%; padding: 8px; background: #111; box-sizing: border-box; border-radius: 0 0 5px 5px; }
+        .nav-vid-btn { background: #333; color: var(--retro-blue); border: 1px solid var(--retro-blue); padding: 6px 12px; font-size: 7px; font-family: 'Press Start 2P'; cursor: pointer; border-radius: 3px; transition: 0.2s; }
+        
+        .developing-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 5; transition: opacity 0.4s; }
+        .dev-text { color: var(--retro-blue); font-family: monospace; font-size: 7px; margin-bottom: 4px; }
+        .dev-bar { width: 70%; height: 3px; background: #333; border: 1px solid #555; }
+        .dev-fill { height: 100%; background: var(--retro-blue); width: 0%; transition: width 0.08s linear; }
+        .flash-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 10; pointer-events: none; opacity: 0; }
+        .do-flash { animation: flashAnim 0.3s ease-out; }
+        @keyframes flashAnim { 0% { opacity: 1; } 100% { opacity: 0; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .msg-footer { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; padding-bottom: 20px; z-index: 10; }
+        .btn-back { background: var(--btn-red); color: white; font-family: 'Press Start 2P'; font-size: 10px; border: 2px solid #000; padding: 12px; cursor: pointer; border-radius: 8px; width: 150px; }
+        
+        /* --- MUSIC & CONTROLS UI --- */
+        .music-ui { width: 100%; display: flex; flex-direction: column; align-items: center; padding-bottom: 30px; }
+        .vinyl-container { position: relative; width: 120px; height: 120px; margin: 10px auto; }
+        .vinyl-disc { width: 100%; height: 100%; background: radial-gradient(circle, #333 8%, #111 9%, #111 20%, #222 21%, #111 30%, #222 31%, #111 40%, #222 41%, #111 50%, #222 51%, #111 60%); border-radius: 50%; border: 3px solid #000; display: flex; align-items: center; justify-content: center; animation: rotateVinyl 4s linear infinite; animation-play-state: paused; }
+        .vinyl-center { width: 42px; height: 42px; background: var(--retro-blue); border-radius: 50%; border: 2px solid #000; overflow: hidden; }
+        .vinyl-center img { width: 100%; height: 100%; object-fit: cover; }
+        @keyframes rotateVinyl { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .visualizer { display: flex; align-items: flex-end; gap: 3px; height: 25px; margin: 15px 0; width: 90%; justify-content: center; }
+        .viz-bar { width: 4px; background: var(--retro-blue); height: 4px; }
+        .playing .viz-bar { animation: dance 0.5s ease infinite alternate; }
+        @keyframes dance { from { height: 4px; } to { height: 25px; } }
+        .song-info { text-align: center; margin: 10px 0; width: 100%; }
+        .song-title { font-size: 8px; color: var(--retro-blue); margin-bottom: 8px; line-height: 1.4; letter-spacing: 0.5px; }
+        .song-artist { font-size: 7px; color: var(--retro-yellow); opacity: 0.9; }
+        .music-progress { width: 90%; height: 8px; background: #222; margin: 10px 0; border: 1px solid var(--retro-blue); position: relative; }
+        .progress-fill { width: 0%; height: 100%; background: var(--retro-blue); transition: width 0.1s linear; }
+        .music-controls { display: flex; gap: 15px; margin: 10px 0; }
+        .music-btn { background: var(--btn-blue); border: 2px solid #fff; padding: 8px 12px; color: white; font-size: 8px; font-family: 'Press Start 2P'; cursor: pointer; border-radius: 4px; }
+        .playlist-header { width: 90%; color: var(--retro-yellow); font-size: 8px; text-align: left; margin-top: 10px; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        .playlist { width: 100%; background: rgba(0,0,0,0.8); border: 1px solid var(--retro-blue); margin-top: 5px; font-size: 7px; max-height: 120px; overflow-y: auto; border-radius: 5px; }
+        .pl-item { padding: 10px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; cursor: pointer; color: var(--retro-blue); line-height: 1.2; }
+        .pl-item.active { background: rgba(0, 255, 255, 0.2); color: var(--retro-yellow); }
+
+        .controls { width: 100%; display: flex; justify-content: space-between; padding: 0 10px; box-sizing: border-box; }
+        .dpad { position: relative; width: 80px; height: 80px; }
+        .d-btn { background: #222; position: absolute; border-radius: 3px; cursor: pointer; box-shadow: 0 4px 0 #000; }
+        .d-btn:active { background: #444; transform: translateY(2px); box-shadow: 0 2px 0 #000; }
+        .up { width: 25px; height: 30px; top: 0; left: 27px; } .down { width: 25px; height: 30px; bottom: 0; left: 27px; }
+        .left { width: 30px; height: 25px; top: 27px; left: 0; } .right { width: 30px; height: 25px; top: 27px; right: 0; }
+        .circle-btn { width: 35px; height: 35px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; border: none; box-shadow: 0 4px 0 rgba(0,0,0,0.3), inset -2px -2px 5px rgba(0,0,0,0.4), inset 2px 2px 5px rgba(255,255,255,0.4); font-size: 10px; cursor: pointer; font-family: 'Press Start 2P'; }
+        .circle-btn:active { transform: scale(0.9); box-shadow: 0 1px 0 rgba(0,0,0,0.3); }
+        .menu-center { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; }
+        .menu-btn-group { text-align: center; font-size: 5px; color: #444; display: flex; flex-direction: column; align-items: center; }
+        .small-btn { width: 25px; height: 25px; background: #444; border-radius: 50%; border: 1px solid #222; cursor: pointer; margin-bottom: 4px; box-shadow: 0 3px 0 #222; }
+        .small-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #222; }
+        .big-text { font-size: 14px; color: var(--retro-blue); text-align: center; line-height: 1.5; z-index: 6; text-shadow: 0 0 5px var(--retro-blue); }
+        .med-text { font-size: 10px; color: var(--retro-blue); margin-top: 15px; text-align: center; z-index: 6; }
+        .blink-text { font-size: 8px; color: var(--retro-yellow); animation: blink 1s infinite; margin-top: 25px; text-align: center; z-index: 6; }
+        .speaker-grill { position: absolute; bottom: 25px; right: 25px; display: flex; flex-direction: column; gap: 6px; transform: rotate(-30deg); }
+        .speaker-line { width: 45px; height: 5px; background: rgba(0,0,0,0.2); border-radius: 10px; box-shadow: inset 1px 1px 2px rgba(0,0,0,0.3); }
+
+        .maze-ui { display: flex; flex-direction: column; align-items: center; width: 100%; padding-bottom: 100px; }
+        .maze-controller { display: grid; grid-template-areas: ". up ." "left . right" ". down ."; gap: 8px; margin: 20px 0; }
+        .maze-btn { width: 50px; height: 50px; background: #222; border: 2px solid var(--retro-blue); border-radius: 12px; color: var(--retro-blue); font-size: 18px; box-shadow: 0 4px #111; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .maze-btn:active { transform: translateY(2px); box-shadow: 0 2px #111;}
+        .btn-up { grid-area: up; } .btn-down { grid-area: down; } .btn-left { grid-area: left; } .btn-right { grid-area: right; }
+        
+        .msg-title { color: var(--retro-blue); font-size: 16px; margin-top: 20px; margin-bottom: 15px; text-align: center; width: 100%; text-shadow: 0 0 5px var(--retro-blue); }
+        .msg-body { position: relative; z-index: 6; color: var(--retro-blue); background: rgba(0, 15, 30, 0.85); padding: 20px; border-radius: 10px; border: 2px solid var(--retro-blue); box-shadow: inset 0 0 15px rgba(0, 255, 255, 0.2); width: 90%; margin: 0 auto; }
+        #msg-h1, #msg-h2 { font-size: 12px; display: block; margin-bottom: 15px; color: var(--retro-yellow); font-weight: bold; line-height: 1.5; }
+        #msg-p { font-size: 9px; line-height: 1.8; color: var(--retro-blue); white-space: pre-wrap; display: block; word-wrap: break-word; text-align: justify; }
+        
+        .btn-skip { background: var(--btn-blue); color: white; font-family: 'Press Start 2P'; font-size: 10px; border: 2px solid #fff; padding: 10px 20px; margin: 20px auto; cursor: pointer; display: block; border-radius: 8px; }
+        .btn-next { background: var(--btn-green); color: white; border: 2px solid #000; padding: 15px; cursor: pointer; border-radius: 8px; width: 240px; font-family: 'Press Start 2P'; font-size: 10px; }
+        
+        .gift-area { width: 120px; height: 120px; margin: 10px auto; border: 3px double var(--retro-blue); background: rgba(0,255,255,0.1); display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden; }
+        .gift-area img { width: 100%; height: 100%; object-fit: contain; }
+        .heart-fly { position: absolute; font-size: 15px; animation: fly 3s linear infinite; z-index: 10; }
+        @keyframes fly { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-150px) scale(1.5); opacity: 0; } }
+        
+        .heart-pixel-container { display: flex; flex-direction: column; align-items: center; transform: scale(0.65); margin-top: 10px; }
+        .pixel-row { display: flex; justify-content: center; }
+        .p-pixel { width: 18px; height: 18px; margin: 1px; border-radius: 1px; }
+        .p-fill { opacity: 0; }
+        .p-empty { background-color: transparent; }
+        .p-heart { background-color: var(--heart-red); box-shadow: 0 0 5px var(--heart-red); }
+        .p-petal { background-color: #ff85b3; box-shadow: 0 0 5px #ff85b3; }
+        .p-center { background-color: #f1c40f; }
+        .p-stem { background-color: #2ecc71; }
+        .p-star { background-color: #f1c40f; box-shadow: 0 0 5px #f1c40f; }
+    </style>
+</head>
+<body>
+
+<!-- RETRO LOADING SCREEN -->
+<div id="loading-screen">
+    <div class="load-percentage" id="load-percentage">1%</div>
+    <div class="load-text" id="load-text">Memuat gallery nissa</div>
+    <div class="load-bar-container">
+        <div class="load-bar-fill" id="load-bar-fill"></div>
+    </div>
+</div>
+
+<!-- Background Bintang Jatuh Luar Layar -->
+<div id="star-fall-bg" style="position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:0; pointer-events:none; overflow:hidden;"></div>
+
+<div class="console" id="console">
+    <div class="screen-border">
+        <div id="display">
+            <div class="space-bg" id="space-bg">
+                <div class="moon"></div><div class="earth">🌍</div><div class="saturn"></div>
+                <div class="ufo">🛸</div><div class="astronaut">👨‍🚀</div><div class="plane">✈️</div>
+            </div>
+            <div id="content-area" style="width: 100%; z-index: 6; display: flex; flex-direction: column; justify-content: center; align-items: center;"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="dpad">
+            <div class="d-btn up" onclick="handlePress('UP')"></div>
+            <div class="d-btn down" onclick="handlePress('DOWN')"></div>
+            <div class="d-btn left" onclick="handlePress('LEFT')"></div>
+            <div class="d-btn right" onclick="handlePress('RIGHT')"></div>
+        </div>
+        <div class="action-btns" style="display: grid; grid-template-columns: 40px 40px; gap: 10px;">
+            <div class="circle-btn" style="background:#1976d2" onclick="handlePress('S')">S</div><div class="circle-btn" style="background:#388e3c" onclick="handlePress('Y')">Y</div>
+            <div class="circle-btn" style="background:var(--btn-red)" onclick="handlePress('A')">A</div><button class="circle-btn" style="background:#fbc02d" onclick="closeOverlay()">B</button>
+        </div>
+    </div>
+
+    <div class="bottom-section" style="margin-top: 20px;">
+        <div class="menu-center">
+            <div class="menu-btn-group"><button class="small-btn" onclick="showMaze(1)"></button><span>GAMES</span></div>
+            <div class="menu-btn-group"><button class="small-btn" onclick="showMusic()"></button><span>MUSIC</span></div>
+            <div class="menu-btn-group"><button class="small-btn" onclick="showGallery()"></button><span>GALLERY</span></div>
+            <div class="menu-btn-group"><button class="small-btn" onclick="showMessage()"></button><span>MESSAGE</span></div>
+        </div>
+    </div>
+    <div class="speaker-grill">
+        <div class="speaker-line"></div><div class="speaker-line"></div><div class="speaker-line"></div>
+        <div class="speaker-line"></div><div class="speaker-line"></div><div class="speaker-line"></div>
+    </div>
+</div>
+<script>
+    const displayArea = document.getElementById('content-area');
+    const displayContainer = document.getElementById('display');
+    const consoleElem = document.getElementById('console');
+    const spaceBg = document.getElementById('space-bg');
+    let typingTimer, mazeTimer, heartTimer, heartInterval, clockInterval;
+
+    let audio = new Audio();
+    let currentSongIndex = 0;
+    let currentVideoIndex = 0;
+
+    let bgMusic = new Audio("https://raw.githubusercontent.com/johanwirawan/johanwirawannnn/main/L'amore%20dice%20ciao%20(From%20La%20matriarca%20-%20The%20Libertine).mp3");
+    bgMusic.loop = true; bgMusic.volume = 0.4; 
+    let hasInteracted = false; 
+
+    function playBackgroundMusic() {
+        if (!hasInteracted) { bgMusic.play().catch(error => console.log("Autoplay dicegah")); hasInteracted = true; }
+    }
+
+    const songs = [
+        { title: "Beatiful", artist: "Bazzi, Camila Cabello", url: "https://raw.githubusercontent.com/johanwirawan/dea/main/Bazzi%2C%20Camila%20Cabello%20-%20Beautiful%20Lyrics.mp3", img: "https://raw.githubusercontent.com/johanwirawan/Nissa-/refs/heads/main/IMG-20260924-WA0003.jpg" },
+        { title: "Jatuh Suka", artist: "Tulus", url: "https://raw.githubusercontent.com/johanwirawan/dea/main/TULUS%20-%20Jatuh%20Suka%20Official%20Music%20Video.mp3", img: "https://raw.githubusercontent.com/johanwirawan/Nissa-/refs/heads/main/IMG-20260924-WA0003.jpg" },
+        { title: "Lesung Pipi", artist: "Laode", url: "https://raw.githubusercontent.com/johanwirawan/dea/main/Raim%20Laode%20-%20Lesung%20Pipi%20%20video%20lirik%20official%20.mp3", img: "https://raw.githubusercontent.com/johanwirawan/Nissa-/refs/heads/main/IMG-20260924-WA0003.jpg" },
+        { title: "Lonely Girl", artist: "Justin Bieber", url: "https://raw.githubusercontent.com/johanwirawan/dea/main/Justin%20Bieber%20-%20One%20Less%20Lonely%20Girl%20Lyrics.mp3", img: "https://raw.githubusercontent.com/johanwirawan/Nissa-/refs/heads/main/IMG-20260924-WA0003.jpg" },
+        { title: "Separuh Aku", artist: "Noah", url: "https://raw.githubusercontent.com/johanwirawan/dea/main/NOAH%20-%20Separuh%20Aku%20Official%20Music%20Video.mp3", img: "https://raw.githubusercontent.com/johanwirawan/Nissa-/refs/heads/main/IMG-20260924-WA0003.jpg" }
+    ];
+
+    const galleryPhotosSet1 = [
+        { img: "https://raw.githubusercontent.com/johanwirawan/Nissa-/refs/heads/main/IMG-20260923-WA0016.jpg", date: "26/01/26" },
+        { img: "https://raw.githubusercontent.com/johanwirawan/Nissa-/refs/heads/main/IMG-20260924-WA0003.jpg", date: "14/01/26" },
+        { img: "https://raw.githubusercontent.com/johanwirawan/Nissa-/refs/heads/main/IMG-20260923-WA0017.jpg", date: "14/01/26" },
+        { img: "https://raw.githubusercontent.com/johanwirawan/Nissa-/refs/heads/main/IMG-20260924-WA0002.jpg", date: "09/01/26" },
+        { img: "https://raw.githubusercontent.com/johanwirawan/Nissa-/refs/heads/main/IMG-20260924-WA0001.jpg", date: "01/12/25" }
+    ];
+
+    const galleryPhotosSet2 = [
+        { img: "https://raw.githubusercontent.com/johanwirawan/Nissa-/refs/heads/main/IMG-20260924-WA0003.jpg", date: "" },
+        { img: "https://raw.githubusercontent.com/johanwirawan/Nissa-/refs/heads/main/IMG-20260924-WA0002.jpg", date: "" },
+        { img: "https://raw.githubusercontent.com/johanwirawan/Nissa-/refs/heads/main/IMG-20260924-WA0001.jpg", date: "" },
+        { img: "https://raw.githubusercontent.com/johanwirawan/Nissa-/refs/heads/main/IMG-20260923-WA0020.jpg", date: "" },
+        { img: "https://raw.githubusercontent.com/johanwirawan/Nissa-/refs/heads/main/IMG-20260923-WA0017.jpg", date: "" }
+    ];
+
+    let currentGalleryData = galleryPhotosSet1; 
+    let isSecondSet = false; 
+
+    const videoLinks = [
+        "https://res.cloudinary.com/dbs1hqrhk/video/upload/VID-20260924-WA0000_tmdnid.mp4",
+        "https://res.cloudinary.com/dbs1hqrhk/video/upload/VID-20260923-WA0022_ja1dre.mp4",
+        "https://res.cloudinary.com/dbs1hqrhk/video/upload/VID-20260923-WA0019_ayz71l.mp4"
+    ];
+
+    const text1 = "Hai, Nisa";
+    const text2 = "Selamat Ulang Tahun!";
+    const text3 = `Aku tahu bagaimana sulitnya melewati hari yang berat, dipaksa berdamai dengan badai kesedihan. Melalui pesan ini, aku berharap kamu tetap melangkah, melewati satu per satu badai itu. Tidak perlu berlari jika kamu tidak mampu. Karena sejauh apa pun, jika tetap berjalan, kamu akan sampai di titik pulih.
+
+Yakinlah bahwa semua badai kesedihan itu akan berhasil kamu lalui. Tak mengapa jika dalam perjalanan kamu merasa lambat. Kamu tidak sedang bertarung dengan siapa pun. Kamu hanya sedang berjalan sendiri menuju kesembuhan. Bersabar dan melangkahlah, waktu akan membawamu ke titik pulih. 
+
+Percayalah, di saat hal berat itu tiba, tak mengapa untuk terlihat rapuh. Hari-hari kita tak selamanya harus baik-baik saja. Aku harap kamu tetap percaya bahwa seberat apa pun yang sedang dihadapi, kamu lebih besar dan hebat dari masalah itu. Mungkin kamu tidak akan langsung menemukan jalan kemudahan.
+
+Terkadang harus melewati fase kesulitan dan merasa kehilangan arah. Namun seiring langkah kecilmu, di ujung jalan kamu akan bertemu sesuatu yang akan menemani dan melewati semua perjalanan sulitmu.
+
+Semangat terus ya, Nisa!
+Bekasi, 29 Juni 2026`;
+    function updateClockUI() {
+        const now = new Date();
+        const formatterTime = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        const formatterDate = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: '2-digit', year: 'numeric' });
+        
+        let timeStr = formatterTime.format(now).replace(/\./g, ':');
+        let dateParts = formatterDate.formatToParts(now);
+        let day = dateParts.find(p => p.type === 'day').value;
+        let month = dateParts.find(p => p.type === 'month').value;
+        let year = dateParts.find(p => p.type === 'year').value;
+        let displayStr = timeStr + " WIB (" + day + month + year + ")";
+        
+        const t2 = document.getElementById('t2'); const bt2 = document.getElementById('bt2');
+        if (t2) t2.innerHTML = displayStr; if (bt2) bt2.innerHTML = displayStr;
+    }
+    function stopAllTimers() {
+        clearInterval(mazeTimer); clearInterval(heartTimer); clearInterval(heartInterval); clearTimeout(typingTimer);
+    }
+
+    function handlePress(key) {
+        if(consoleElem.classList.contains('overlay-active')) return;
+        stopAllTimers(); playBackgroundMusic();
+        
+        let text = "";
+        if(key === 'UP') text = "Atas: Menghubungkan diri dengan Semesta atau Energi Positif.";
+        else if(key === 'DOWN') text = "Bawah: Grounding (Menyatu dengan Bumi). Melepaskan semua stres.";
+        else if(key === 'RIGHT') text = "Kanan: Masa Depan. Siap melangkah ke arah kehidupan yang damai.";
+        else if(key === 'LEFT') text = "Kiri: Keseimbangan Energi. Menyeimbangkan emosi dan logika.";
+        else if(key === 'A') { showPixelHeart(); return; }
+        else if(key === 'S') { showPixelFlower(); return; }
+        else if(key === 'Y') { showPixelStar(); return; }
+
+        displayArea.innerHTML = `<div id="bt1" class="big-text" style="margin-top:50px; font-size:10px; padding:0 10px;"></div><div id="bt2" class="med-text"></div><div id="bt3" class="blink-text" style="display:none;">Nisa, Press Any Button!</div>`;
+        
+        let i = 0;
+        function type() { if (i < text.length) { document.getElementById('bt1').innerHTML += text.charAt(i); i++; typingTimer = setTimeout(type, 50); } else { updateClockUI(); document.getElementById('bt3').style.display = "block"; } }
+        type();
+    }
+
+    function animatePixels(msgId) {
+        const animate = () => {
+            document.querySelectorAll('.p-fill').forEach(p => {
+                p.style.transition = 'none'; p.style.transform = `translateY(-150px)`; p.style.opacity = '0';
+                setTimeout(() => { p.style.transition = 'all 0.8s ease-out'; p.style.transform = 'translateY(0)'; p.style.opacity = '1'; }, Math.random() * 800);
+            });
+            setTimeout(() => { const msg = document.getElementById(msgId); if(msg) msg.style.display = 'block'; }, 1000);
+        };
+        animate(); heartInterval = setInterval(animate, 4000);
+    }
+
+    function showPixelHeart() {
+        const grid = [[0,1,1,0,0,0,1,1,0],[1,1,1,1,0,1,1,1,1],[1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1],[0,1,1,1,1,1,1,1,0],[0,0,1,1,1,1,1,0,0],[0,0,0,1,1,1,0,0,0],[0,0,0,0,1,0,0,0,0]];
+        let html = '<div class="heart-pixel-container">';
+        grid.forEach(row => { html += '<div class="pixel-row">'; row.forEach(p => html += `<div class="p-pixel ${p ? 'p-fill p-heart' : 'p-empty'}"></div>`); html += '</div>'; });
+        html += '</div><div id="love-msg" class="blink-text" style="color:var(--heart-red); display:none; margin-top:15px;">Ai luvv yuuu</div>';
+        displayArea.innerHTML = html; animatePixels('love-msg');
+    }
+
+    function showPixelFlower() {
+        const grid = [[0,0,1,1,1,0,0],[0,1,1,2,1,1,0],[1,1,2,2,2,1,1],[0,1,1,2,1,1,0],[0,0,1,1,1,0,0],[0,0,0,3,0,0,0],[0,0,3,3,3,0,0],[0,0,0,3,0,0,0]];
+        let html = '<div class="heart-pixel-container">';
+        grid.forEach(row => { html += '<div class="pixel-row">'; row.forEach(p => { let c = 'p-empty'; if(p===1) c = 'p-fill p-petal'; else if(p===2) c = 'p-fill p-center'; else if(p===3) c = 'p-fill p-stem'; html += `<div class="p-pixel ${c}"></div>`; }); html += '</div>'; });
+        html += '</div><div id="flower-msg" class="blink-text" style="color:var(--maze-pink); display:none; margin-top:15px;">Bunga Cantik Untuk Nisa 🌸</div>';
+        displayArea.innerHTML = html; animatePixels('flower-msg');
+    }
+
+    function showPixelStar() {
+        const grid = [[0,0,0,0,1,0,0,0,0],[0,0,0,1,1,1,0,0,0],[0,0,1,1,1,1,1,0,0],[1,1,1,1,1,1,1,1,1],[0,1,1,1,1,1,1,1,0],[0,0,1,1,1,1,1,0,0],[0,1,1,0,0,0,1,1,0],[1,1,0,0,0,0,0,1,1]];
+        let html = '<div class="heart-pixel-container">';
+        grid.forEach(row => { html += '<div class="pixel-row">'; row.forEach(p => html += `<div class="p-pixel ${p ? 'p-fill p-star' : 'p-empty'}"></div>`); html += '</div>'; });
+        html += '</div><div id="star-msg" class="blink-text" style="color:var(--retro-yellow); display:none; margin-top:15px;">You are a Star, Nisa! ⭐</div>';
+        displayArea.innerHTML = html; animatePixels('star-msg');
+    }
+
+    function showMusic() { stopAllTimers(); bgMusic.pause(); consoleElem.classList.add('overlay-active'); displayContainer.style.justifyContent = 'flex-start'; renderMusicUI(); }
+
+    function renderMusicUI() {
+        const song = songs[currentSongIndex]; const isPlaying = !audio.paused;
+        displayArea.innerHTML = `<div class="music-ui ${isPlaying ? 'playing' : ''}"><div class="msg-title" style="font-size:11px; margin-top:5px; margin-bottom:5px;">Play List Nisa</div><div class="vinyl-container"><div class="vinyl-disc"><div class="vinyl-center"><img src="${song.img}"></div></div></div><div class="visualizer">${Array(16).fill('<div class="viz-bar"></div>').join('')}</div><div class="song-info"><div class="song-title">${song.title}</div><div class="song-artist">${song.artist}</div></div><div class="music-progress"><div class="progress-fill" id="p-fill"></div></div><div class="music-controls"><button class="music-btn" onclick="changeSong(-1)">◀◀</button><button class="music-btn" onclick="togglePlay()" id="play-pause-btn">${isPlaying ? '⏸' : '▶'}</button><button class="music-btn" onclick="changeSong(1)">▶▶</button></div><div class="playlist-header">PLAYLIST 🎵</div><div class="playlist" id="pl-list"></div><button class="btn-msg btn-back" onclick="audio.pause(); bgMusic.play(); closeOverlay()" style="margin-top:20px; width: 180px;">CLOSE</button></div>`;
+        if(isPlaying) document.querySelectorAll('.viz-bar').forEach(bar => { bar.style.animationDuration = (Math.random() * 0.4 + 0.2) + 's'; });
+        updatePlaylistUI(); if(audio.src !== song.url) audio.src = song.url;
+        audio.ontimeupdate = () => { const fill = document.getElementById('p-fill'); if(fill && audio.duration) fill.style.width = (audio.currentTime / audio.duration * 100) + "%"; };
+        audio.onended = () => changeSong(1);
+    }
+
+    function togglePlay() { audio.paused ? audio.play() : audio.pause(); renderMusicUI(); }
+    function changeSong(dir) { currentSongIndex = (currentSongIndex + dir + songs.length) % songs.length; audio.src = songs[currentSongIndex].url; audio.play(); renderMusicUI(); }
+    function updatePlaylistUI() { const list = document.getElementById('pl-list'); if(list) list.innerHTML = songs.map((s, i) => `<div class="pl-item ${i === currentSongIndex ? 'active' : ''}" onclick="playSpecific(${i})"><span>${i+1}. ${s.title.substring(0,15)}...</span><span>🎵</span></div>`).join(''); }
+    function playSpecific(i) { currentSongIndex = i; audio.src = songs[currentSongIndex].url; audio.play(); renderMusicUI(); }
+
+    function showGallery() {
+        stopAllTimers(); playBackgroundMusic(); consoleElem.classList.add('overlay-active');
+        displayContainer.style.justifyContent = 'flex-start'; displayContainer.style.padding = '0';
+        currentGalleryData = galleryPhotosSet1; isSecondSet = false;
+        
+        displayArea.innerHTML = `
+            <div class="gallery-ui" id="gallery-ui">
+                <div class="printer-header">
+                    <div class="gallery-big-text">PHOTOBOX NISA</div>
+                    <div class="printer-slot"></div>
+                    <div id="printing-status" class="wavy-text" style="display:none;">
+                        ${createWavyText("Mencetak lagi...")}
+                    </div>
+                </div>
+                
+                <div class="photo-stream" id="photo-stream">
+                    <div id="start-btn-area" style="text-align:center; width:100%; margin: 20px 0;">
+                        <button class="btn-gal-control print-btn" onclick="startOneByOneProcess()" style="width: 160px; padding: 12px; font-size: 8px;">CETAK FOTO</button>
+                    </div>
+                </div>
+
+                <div class="gallery-bottom-bar">
+                    <button class="btn-gal-control" onclick="closeOverlay()">KEMBALI</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function createWavyText(text) { return text.split('').map((char, i) => `<span style="--i:${i}">${char === ' ' ? '&nbsp;' : char}</span>`).join(''); }
+
+    async function startOneByOneProcess() {
+        const stream = document.getElementById('photo-stream');
+        const startArea = document.getElementById('start-btn-area');
+        const statusText = document.getElementById('printing-status');
+
+        if(startArea) startArea.style.display = 'none'; 
+        if(statusText) statusText.style.display = 'flex';
+        
+        await new Promise(r => setTimeout(r, 800));
+        
+        for (let i = 0; i < currentGalleryData.length; i++) { 
+            await processSinglePhoto(currentGalleryData[i], i + 1, stream); 
+            stream.scrollTop = stream.scrollHeight; 
+            await new Promise(r => setTimeout(r, 400)); 
+        }
+        
+        if(statusText) statusText.style.display = 'none';
+        appendVideoTriggerCard(stream);
+    }
+
+    function processSinglePhoto(photoData, num, container) {
+        return new Promise(resolve => {
+            const pDiv = document.createElement('div');
+            pDiv.className = 'photo-card-frame';
+            
+            pDiv.innerHTML = `<div class="photo-img-area"><img src="${photoData.img}" id="img-${num}" alt="Memory"><div class="flash-overlay" id="flash-${num}"></div><div class="developing-overlay" id="dev-${num}"><div class="dev-text">Cetak.. <span id="pct-${num}">0%</span></div><div class="dev-bar"><div class="dev-fill" id="fill-${num}"></div></div></div></div><div class="photo-tag-number">#${num}</div><div class="card-dot d-left"></div><div class="card-dot d-right"></div>`;
+            container.appendChild(pDiv);
+            
+            let pct = 0; const fill = document.getElementById(`fill-${num}`); const txt = document.getElementById(`pct-${num}`); const devLayer = document.getElementById(`dev-${num}`); const realImg = document.getElementById(`img-${num}`); const flash = document.getElementById(`flash-${num}`);
+            
+            const interval = setInterval(() => {
+                pct += 5; if(fill) fill.style.width = pct + "%"; if(txt) txt.innerText = pct + "%";
+                if(pct >= 100) { 
+                    clearInterval(interval); if(flash) flash.classList.add('do-flash'); 
+                    if(devLayer) devLayer.style.opacity = '0'; if(realImg) realImg.style.opacity = '1'; 
+                    setTimeout(() => { resolve(); }, 250); 
+                }
+            }, 20);
+        });
+    }
+    function appendVideoTriggerCard(container) {
+        const vidDiv = document.createElement('div'); 
+        vidDiv.className = 'video-card-trigger'; 
+        vidDiv.onclick = showFullscreenVideo;
+        vidDiv.innerHTML = `<div class="play-circle"><div class="play-triangle"></div></div><div class="video-text">Putar video</div><div class="clip-dump-label-trigger">Clip Dump</div>`;
+        container.appendChild(vidDiv);
+        
+        const reloadBtn = document.createElement('button'); 
+        reloadBtn.className = 'btn-reload'; 
+        reloadBtn.innerText = 'CETAK ULANG'; 
+        reloadBtn.onclick = handleReload; 
+        container.appendChild(reloadBtn);
+        
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function handleReload() { 
+        if (isSecondSet) { currentGalleryData = galleryPhotosSet1; isSecondSet = false; } 
+        else { currentGalleryData = galleryPhotosSet2; isSecondSet = true; } 
+        
+        document.getElementById('photo-stream').innerHTML = `<div id="printing-status" class="wavy-text" style="display:none;">${createWavyText("Mencetak lagi...")}</div>`;
+        startOneByOneProcess(); 
+    }
+
+    function showFullscreenVideo() {
+        if(videoLinks.length === 0) return; 
+        currentVideoIndex = 0; 
+        bgMusic.pause(); 
+        const modalHTML = `<div class="video-modal-overlay" id="video-modal"><div class="video-window-frame"><button class="btn-close-modal" onclick="closeVideoModal()">✕</button><div class="video-header-bar">Clip Dump</div><div class="video-player-container"><video id="main-video" src="${videoLinks[0]}" controls autoplay playsinline></video></div><div class="nav-video-container"><button class="nav-vid-btn" onclick="changeVideo(-1)">◀ PREV</button><button class="nav-vid-btn" onclick="changeVideo(1)">NEXT ▶</button></div></div></div>`;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+    
+    function changeVideo(dir) { 
+        currentVideoIndex = (currentVideoIndex + dir + videoLinks.length) % videoLinks.length; 
+        const vid = document.getElementById('main-video'); 
+        if(vid) { vid.src = videoLinks[currentVideoIndex]; vid.play(); } 
+    }
+    
+    function closeVideoModal() { 
+        const modal = document.getElementById('video-modal'); 
+        if (modal) modal.remove(); 
+        bgMusic.play(); 
+    }
+
+    function showMessage() {
+        stopAllTimers(); playBackgroundMusic(); consoleElem.classList.add('overlay-active'); displayContainer.style.justifyContent = 'flex-start';
+        displayArea.innerHTML = `<div class="msg-title">MESSAGE</div><div class="msg-body"><span id="msg-h1"></span><span id="msg-h2"></span><span id="msg-p"></span></div><button id="skip-btn" class="btn-skip" onclick="skipTyping()">SKIP</button><div class="msg-footer"><button class="btn-msg btn-next" onclick="window.open('https://wa.me/628156152002', '_blank')">Tombol Ribut</button><button class="btn-msg btn-back" onclick="closeOverlay()">KEMBALI</button></div>`;
+        typeWriter(text1, "msg-h1", 50, () => { typeWriter(text2, "msg-h2", 50, () => { typeWriter(text3, "msg-p", 20); }); });
+    }
+
+    function typeWriter(text, elementId, speed, callback) {
+        let i = 0; const element = document.getElementById(elementId); if(!element) return;
+        function type() { if (i < text.length) { element.innerHTML += text.charAt(i); i++; displayContainer.scrollTop = displayContainer.scrollHeight; typingTimer = setTimeout(type, speed); } else if (callback) callback(); }
+        type();
+    }
+    function skipTyping() { clearTimeout(typingTimer); document.getElementById('msg-h1').innerHTML = text1; document.getElementById('msg-h2').innerHTML = text2; document.getElementById('msg-p').innerHTML = text3; if(document.getElementById('skip-btn')) document.getElementById('skip-btn').style.display = 'none'; displayContainer.scrollTop = displayContainer.scrollHeight; }
+
+    let player = { x: 1, y: 1 }, currentLevel = 1, timeLeft = 25;
+    const mazeMaps = {
+        1: [[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,0,0,0,1,0,0,0,0,0,0,0,0,0,1],[1,1,1,0,1,0,1,1,1,1,1,1,1,0,1],[1,0,0,0,0,0,1,0,0,0,0,0,1,0,1],[1,0,1,1,1,1,1,0,1,1,1,0,1,0,1],[1,0,1,0,0,0,0,0,1,0,0,0,1,0,1],[1,0,1,0,1,1,1,1,1,0,1,1,1,0,1],[1,0,0,0,1,0,0,0,0,0,1,0,0,0,1],[1,1,1,1,1,0,1,1,1,1,1,0,1,1,1],[1,0,0,0,0,0,1,0,0,0,0,0,0,0,1],[1,0,1,1,1,1,1,0,1,1,1,1,1,0,1],[1,0,1,0,0,0,1,0,1,0,0,0,1,0,1],[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],[1,0,0,0,1,0,0,0,0,0,1,0,0,2,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]],
+        2: [[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,1],[1,0,1,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,1,0,1],[1,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,1,0,1,0,1],[1,0,1,0,1,1,1,1,1,0,1,0,1,1,1,0,1,0,1,0,1],[1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,1,0,0,0,1],[1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,0,1],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,1],[1,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,1,0,1,0,1],[1,0,0,0,1,0,0,0,0,0,1,0,1,0,1,0,0,0,1,0,1],[1,0,1,1,1,1,1,1,1,0,1,0,1,0,1,0,1,1,1,0,1],[1,0,1,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,1],[1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],[1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1],[1,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,1],[1,0,1,0,0,0,1,0,1,1,1,1,1,1,1,0,1,0,1,1,1],[1,0,1,1,1,1,1,0,1,0,0,0,0,0,1,0,1,0,0,0,1],[1,0,0,0,0,0,0,0,1,0,1,1,1,0,1,0,1,1,1,0,1],[1,0,1,1,1,1,1,1,1,0,0,0,1,0,0,0,1,0,0,2,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]],
+        3: [[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,1],[1,0,1,0,1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,1,1,1,1,0,1],[1,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,1],[1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,0,1],[1,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,1,0,1],[1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1],[1,0,0,0,0,0,1,0,1,0,0,0,0,0,1,0,1,0,0,0,1,0,0,0,1],[1,0,1,1,1,0,1,0,1,1,1,1,1,0,1,0,1,0,1,0,1,1,1,1,1],[1,0,1,0,0,0,1,0,0,0,0,0,1,0,0,0,1,0,1,0,0,0,0,0,1],[1,0,1,0,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1],[1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,1,0,1],[1,1,1,1,1,0,1,1,1,0,1,1,1,1,1,1,1,1,1,0,1,0,1,0,1],[1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,1,0,1,0,1,0,1],[1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,0,1,0,1,0,1,0,1],[1,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1,0,1,0,0,0,1],[1,0,1,0,1,1,1,1,1,1,1,0,1,0,1,0,1,0,1,0,1,1,1,1,1],[1,0,1,0,1,0,0,0,0,0,1,0,1,0,1,0,0,0,1,0,0,0,0,0,1],[1,0,1,0,1,0,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,0,1],[1,0,0,0,1,0,1,0,1,0,1,0,0,0,1,0,0,0,0,0,0,0,1,0,1],[1,1,1,0,1,0,1,0,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1],[1,0,0,0,1,0,1,0,0,0,1,0,0,0,0,0,1,0,0,0,1,0,1,0,1],[1,0,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,0,1,0,1],[1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,2,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]]
+    };
+
+    function showMaze(lvl) {
+        stopAllTimers(); currentLevel = lvl; player = { x: 1, y: 1 }; playBackgroundMusic();
+        consoleElem.classList.add('overlay-active'); displayContainer.style.justifyContent = 'flex-start';
+        let timerHTML = lvl === 3 ? `<div id="maze-timer" style="color:red; font-size:12px; margin-bottom:10px;">WAKTU: 25s</div>` : '';
+        displayArea.innerHTML = `<div class="maze-ui"><div class="msg-title">MAZE LVL ${lvl}</div>${timerHTML}<canvas id="mazeCanvas" width="240" height="240"></canvas><div class="maze-controller"><button class="maze-btn btn-up" onclick="moveMaze('up')">▲</button><button class="maze-btn btn-left" onclick="moveMaze('left')">◀</button><button class="maze-btn btn-right" onclick="moveMaze('right')">▶</button><button class="maze-btn btn-down" onclick="moveMaze('down')">▼</button></div><button class="btn-msg btn-back" onclick="closeOverlay()">KEMBALI</button></div>`;
+        if (lvl === 3) startTimer(); drawMaze();
+    }
+
+    function startTimer() {
+        timeLeft = 25; mazeTimer = setInterval(() => { timeLeft--; if(document.getElementById('maze-timer')) document.getElementById('maze-timer').innerText = `WAKTU: ${timeLeft}s`; if (timeLeft <= 0) { clearInterval(mazeTimer); displayArea.innerHTML = `<div class="maze-ui"><h2 style="color:red; margin-top:50px;">GAGAL!</h2><p style="color:white; font-size:10px; text-align:center; padding:10px;">Yah waktunya habis, Ingat ya walaupun kamu gagal digame ini kamu tetap bakal selalu menang dihati dia kok^^</p><button class="btn-msg btn-next" onclick="showMaze(3)">ULANG LVL 3</button><button class="btn-msg btn-back" onclick="closeOverlay()">MENYERAH</button></div>`; } }, 1000);
+    }
+    
+    function drawMaze() { 
+        const canvas = document.getElementById("mazeCanvas"); if(!canvas) return; 
+        const ctx = canvas.getContext("2d"); const maze = mazeMaps[currentLevel]; const tileSize = 240 / maze.length; 
+        
+        ctx.fillStyle = "#050a10"; ctx.fillRect(0,0,240,240); 
+        
+        for(let y=0; y<maze.length; y++){ 
+            for(let x=0; x<maze.length; x++){ 
+                if(maze[y][x] === 1) { 
+                    ctx.fillStyle = "#0a2540"; ctx.fillRect(x*tileSize, y*tileSize, tileSize, tileSize); 
+                    ctx.strokeStyle = "#00ffff"; ctx.lineWidth = 1; ctx.strokeRect(x*tileSize, y*tileSize, tileSize, tileSize);
+                } else if(maze[y][x] === 2) { 
+                    ctx.font = (tileSize-2)+"px Arial"; ctx.fillText("👦", x*tileSize+tileSize/2, y*tileSize+tileSize/2); 
+                } 
+            } 
+        } 
+        ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = (tileSize-2)+"px Arial"; ctx.fillText("👧", player.x*tileSize+tileSize/2, player.y*tileSize+tileSize/2); 
+    }
+    
+    function moveMaze(d) {
+        let nx = player.x, ny = player.y; if(d==='up') ny--; if(d==='down') ny++; if(d==='left') nx--; if(d==='right') nx++;
+        if(mazeMaps[currentLevel][ny] && mazeMaps[currentLevel][ny][nx] !== 1) { player.x = nx; player.y = ny; drawMaze(); }
+        if(mazeMaps[currentLevel][player.y][player.x] === 2) {
+            clearInterval(mazeTimer);
+            if(currentLevel === 1) { displayArea.innerHTML = `<div class="maze-ui"><h2 style="color:var(--retro-blue); margin-top:30px; text-align:center;">LVL 1 CLEAR!</h2><p style="color:white; font-size:10px; text-align:center; line-height:1.6; padding:15px;">Ini bukan maze… ini simulasi hidup bareng dia 😌 Ribet dikit, tapi ujungnya bahagia 💕😆</p><button class="btn-msg btn-next" onclick="showMaze(2)">LANJUT LEVEL 2</button></div>`; }
+            else if(currentLevel === 2) { displayArea.innerHTML = `<div class="maze-ui"><h2 style="color:var(--retro-blue); margin-top:30px; text-align:center;">LVL 2 CLEAR!</h2><p style="color:white; font-size:10px; text-align:center; line-height:1.6; padding:15px;">Ini game biasa, bukan tes kesabaran… tapi kamu masih lanjut, berarti kamu sayang dia kan? 😆</p><button class="btn-msg btn-next" onclick="showMaze(3)">MULAI LVL TERAKHIR</button></div>`; }
+            else { 
+                displayArea.innerHTML = `<div class="maze-ui"><h2 style="color:var(--retro-blue); margin-top:30px;">BERHASIL!</h2><div class="gift-area"><img src="https://raw.githubusercontent.com/johanwirawan/persiapaantina/refs/heads/main/funny.gif"></div><p style="color:white; font-size:10px; text-align:center; padding:10px;">Congratss, Hal penting dari game ini: hidup juga sering seperti ini— jalannya nggak selalu jelas, banyak lika liku nya kan?, tapi diakhir perjalanan selalu ada orang yang menunggu untuk melakukan kebahagian bersama kamu, semoga hari kamu menyenangkan^^!<br><br><span style="color:var(--retro-yellow);">Proud of you ❤️</span></p><button class="btn-msg btn-next" onclick="closeOverlay()">SELESAI</button></div>`; 
+                heartTimer = setInterval(() => { const h = document.createElement('div'); h.className = 'heart-fly'; h.innerHTML = '❤️'; h.style.left = Math.random()*80+10+'%'; h.style.bottom = '20%'; displayArea.appendChild(h); setTimeout(()=>h.remove(), 3000); }, 400); 
+            }
+        }
+    }
+
+    function closeOverlay() { stopAllTimers(); closeVideoModal(); consoleElem.classList.remove('overlay-active'); displayContainer.style.padding = '15px'; resetScreen(); }
+    
+    function resetScreen() { 
+        stopAllTimers(); displayContainer.style.justifyContent = 'center'; 
+        displayArea.innerHTML = `<div id="t1" class="big-text"></div><div id="t2" class="med-text"></div><div id="t3" class="blink-text" style="display:none;">Press Any Button!</div>`; 
+        let i = 0; const txt = "Welcome To Game Boy Nisaaa Happy Birthday 17th🥳"; 
+        function type() { if (i < txt.length) { document.getElementById('t1').innerHTML += txt.charAt(i); i++; typingTimer = setTimeout(type, 70); } else { updateClockUI(); document.getElementById('t3').style.display = "block"; } } 
+        type(); 
+    }
+    
+    function createFallingStars() {
+        const bg = document.getElementById('star-fall-bg');
+        if(!bg) return;
+        for(let i=0; i<35; i++) {
+            let s = document.createElement('div');
+            s.className = 'bg-star';
+            s.style.left = Math.random() * 100 + 'vw';
+            s.style.animationDuration = (Math.random() * 3 + 2) + 's';
+            s.style.animationDelay = Math.random() * 2 + 's';
+            bg.appendChild(s);
+        }
+    }
+
+    function createStars() { 
+        for (let i = 0; i < 35; i++) { const star = document.createElement('div'); star.className = 'star'; const size = Math.random() * 3 + 'px'; star.style.width = size; star.style.height = size; star.style.top = Math.random() * 100 + '%'; star.style.left = Math.random() * 100 + '%'; star.style.setProperty('--duration', (Math.random() * 3 + 1) + 's'); spaceBg.appendChild(star); } 
+    }
+
+    function runRetroLoading() {
+        const percentageElem = document.getElementById('load-percentage');
+        const textElem = document.getElementById('load-text');
+        const fillElem = document.getElementById('load-bar-fill');
+        const loadingScreen = document.getElementById('loading-screen');
+
+        let currentPercent = 1;
+        
+        function updateLoader() {
+            if (currentPercent <= 5) {
+                textElem.innerText = "Memuat gallery nissa";
+            } else if (currentPercent <= 30) {
+                textElem.innerText = "Memuat Playlist nissa";
+            } else if (currentPercent <= 55) {
+                textElem.innerText = "Memuat Pesan";
+            } else {
+                textElem.innerText = "Memuat Segala nya tentang nissa";
+            }
+
+            percentageElem.innerText = currentPercent + "%";
+            fillElem.style.width = currentPercent + "%";
+
+            if (currentPercent === 60) {
+                setTimeout(() => {
+                    currentPercent = 100;
+                    updateLoader();
+                    setTimeout(() => {
+                        loadingScreen.style.opacity = '0';
+                        setTimeout(() => {
+                            loadingScreen.style.display = 'none';
+                        }, 500);
+                    }, 400);
+                }, 1200);
+                return;
+            }
+
+            if (currentPercent < 100) {
+                currentPercent++;
+                setTimeout(updateLoader, 35);
+            }
+        }
+
+        setTimeout(updateLoader, 500);
+    }
+
+    window.onload = () => { 
+        createFallingStars();
+        createStars(); 
+        resetScreen(); 
+        clockInterval = setInterval(updateClockUI, 1000); 
+        runRetroLoading();
+        document.body.addEventListener('click', playBackgroundMusic, { once: true });
+    };
+</script>
+</body>
+</html>
